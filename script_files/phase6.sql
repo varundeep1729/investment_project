@@ -219,7 +219,7 @@ SELECT
     error_message,
     event_timestamp AS login_time,
     client_ip,
-    connection_type
+    connection AS connection_name
 FROM SNOWFLAKE.ACCOUNT_USAGE.LOGIN_HISTORY
 WHERE event_timestamp >= DATEADD(DAY, -30, CURRENT_DATE())
 ORDER BY event_timestamp DESC;
@@ -234,7 +234,7 @@ ORDER BY event_timestamp DESC;
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW VW_DATA_TRANSFER AS
 SELECT
-    DATE_TRUNC('DAY', usage_date) AS transfer_date,
+    DATE_TRUNC('DAY', start_time) AS transfer_date,
     source_cloud,
     source_region,
     target_cloud,
@@ -243,7 +243,7 @@ SELECT
     ROUND(SUM(bytes_transferred) / POWER(1024, 3), 4) AS gb_transferred,
     ROUND(SUM(bytes_transferred) / POWER(1024, 4), 6) AS tb_transferred
 FROM SNOWFLAKE.ACCOUNT_USAGE.DATA_TRANSFER_HISTORY
-WHERE usage_date >= DATEADD(DAY, -30, CURRENT_DATE())
+WHERE start_time >= DATEADD(DAY, -30, CURRENT_DATE())
 GROUP BY 1, 2, 3, 4, 5, 6
 ORDER BY transfer_date DESC, gb_transferred DESC;
 

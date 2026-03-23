@@ -465,7 +465,6 @@ But they don't need full PII access for their work.
 CREATE OR REPLACE MASKING POLICY MASK_CLIENT_PII
     AS (val STRING)
     RETURNS STRING
-    COMMENT = 'Masks client PII. Full: DATA_ADMIN, ML_ADMIN, ANALYST. Masked: others.'
     ->
     CASE
         -- Full access: Admin and Analyst roles
@@ -478,7 +477,8 @@ CREATE OR REPLACE MASKING POLICY MASK_CLIENT_PII
             END
         -- No access: Everyone else sees masked value
         ELSE '***MASKED***'
-    END;
+    END
+    COMMENT = 'Masks client PII. Full: DATA_ADMIN, ML_ADMIN, ANALYST. Masked: others.';
 
 -- ------------------------------------------------------------
 -- POLICY 2: MASK_ACCOUNT_NUMBER
@@ -504,7 +504,6 @@ This allows:
 CREATE OR REPLACE MASKING POLICY MASK_ACCOUNT_NUMBER
     AS (val STRING)
     RETURNS STRING
-    COMMENT = 'Masks account numbers. Shows last 4 digits only.'
     ->
     CASE
         -- Full access: Admin and Analyst only
@@ -513,7 +512,8 @@ CREATE OR REPLACE MASKING POLICY MASK_ACCOUNT_NUMBER
         WHEN LENGTH(val) > 4 THEN CONCAT('****-****-', RIGHT(val, 4))
         -- Fallback for short values
         ELSE '****'
-    END;
+    END
+    COMMENT = 'Masks account numbers. Shows last 4 digits only.';
 
 -- ------------------------------------------------------------
 -- POLICY 3: MASK_FINANCIAL_AMOUNT
@@ -544,14 +544,14 @@ Why NULL instead of 0 or fake value?
 CREATE OR REPLACE MASKING POLICY MASK_FINANCIAL_AMOUNT
     AS (val NUMBER)
     RETURNS NUMBER
-    COMMENT = 'Masks financial amounts. Full: DATA_ADMIN, ANALYST, ML_ENGINEER. Masked: READONLY.'
     ->
     CASE
         -- Full access: Most functional roles need financial data
         WHEN CURRENT_ROLE() IN ('INV_DATA_ADMIN', 'INV_ML_ADMIN', 'INV_ANALYST', 'INV_DATA_ENGINEER', 'INV_ML_ENGINEER', 'ACCOUNTADMIN') THEN val
         -- No access: Return NULL for READONLY and others
         ELSE NULL
-    END;
+    END
+    COMMENT = 'Masks financial amounts. Full: DATA_ADMIN, ANALYST, ML_ENGINEER. Masked: READONLY.';
 
 -- ------------------------------------------------------------
 -- POLICY 4: MASK_PHONE_EMAIL
@@ -579,7 +579,6 @@ This provides:
 CREATE OR REPLACE MASKING POLICY MASK_PHONE_EMAIL
     AS (val STRING)
     RETURNS STRING
-    COMMENT = 'Masks phone numbers and emails.'
     ->
     CASE
         -- Full access: Admin and Analyst
@@ -590,7 +589,8 @@ CREATE OR REPLACE MASKING POLICY MASK_PHONE_EMAIL
         WHEN LENGTH(val) >= 10 THEN CONCAT('***-***-', RIGHT(val, 4))
         -- Fallback
         ELSE '***'
-    END;
+    END
+    COMMENT = 'Masks phone numbers and emails.';
 
 -- VERIFICATION
 SHOW MASKING POLICIES IN SCHEMA INV_GOVERNANCE_DB.POLICIES;
@@ -685,7 +685,6 @@ ACCESS MATRIX:
 CREATE OR REPLACE ROW ACCESS POLICY ROW_ACCESS_DATA_QUALITY
     AS (dq_status STRING)
     RETURNS BOOLEAN
-    COMMENT = 'DQ-based access. CERTIFIED: all. QUARANTINED: engineers only.'
     ->
     CASE
         -- CERTIFIED data: Everyone can see
@@ -698,7 +697,8 @@ CREATE OR REPLACE ROW ACCESS POLICY ROW_ACCESS_DATA_QUALITY
             CURRENT_ROLE() IN ('INV_DATA_ADMIN', 'INV_DATA_ENGINEER', 'ACCOUNTADMIN')
         -- Default: Allow (for rows without DQ status)
         ELSE TRUE
-    END;
+    END
+    COMMENT = 'DQ-based access. CERTIFIED: all. QUARANTINED: engineers only.';
 
 -- ------------------------------------------------------------
 -- POLICY 2: ROW_ACCESS_CLIENT_TIER
@@ -721,7 +721,6 @@ This implements "least privilege" - give access only where needed.
 CREATE OR REPLACE ROW ACCESS POLICY ROW_ACCESS_CLIENT_TIER
     AS (client_tier STRING)
     RETURNS BOOLEAN
-    COMMENT = 'Client tier access. INSTITUTIONAL: full access. RETAIL: restricted.'
     ->
     CASE
         -- Admin and Analyst: See all clients
@@ -734,7 +733,8 @@ CREATE OR REPLACE ROW ACCESS POLICY ROW_ACCESS_CLIENT_TIER
             CURRENT_ROLE() IN ('INV_DATA_ADMIN', 'INV_ANALYST', 'ACCOUNTADMIN')
         -- Default: Allow
         ELSE TRUE
-    END;
+    END
+    COMMENT = 'Client tier access. INSTITUTIONAL: full access. RETAIL: restricted.';
 
 -- VERIFICATION
 SHOW ROW ACCESS POLICIES IN SCHEMA INV_GOVERNANCE_DB.POLICIES;

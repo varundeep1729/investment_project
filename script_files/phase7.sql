@@ -28,6 +28,11 @@ USE ROLE ACCOUNTADMIN;
 USE DATABASE INV_GOVERNANCE_DB;
 USE SCHEMA MONITORING;
 
+CREATE NOTIFICATION INTEGRATION IF NOT EXISTS INV_EMAIL_NOTIFICATION
+    TYPE = EMAIL
+    ENABLED = TRUE
+    ALLOWED_RECIPIENTS = ('varundeep2287@gmail.com');
+
 
 -- ============================================================
 -- SECTION 1: RESOURCE MONITOR ALERT
@@ -49,7 +54,8 @@ CREATE OR REPLACE ALERT INV_GOVERNANCE_DB.MONITORING.ALERT_RESOURCE_MONITOR_CRIT
     ))
     THEN
         CALL SYSTEM$SEND_EMAIL(
-            'investment-alerts@company.com',
+            'INV_EMAIL_NOTIFICATION',
+            'varundeep2287@gmail.com',
             'CRITICAL: Investment Platform - Resource Monitor Near Limit',
             'One or more resource monitors have reached 90% or higher credit consumption. Review immediately to prevent warehouse suspension.'
         );
@@ -75,7 +81,8 @@ CREATE OR REPLACE ALERT INV_GOVERNANCE_DB.MONITORING.ALERT_LONG_RUNNING_QUERY
     ))
     THEN
         CALL SYSTEM$SEND_EMAIL(
-            'investment-alerts@company.com',
+            'INV_EMAIL_NOTIFICATION',
+            'varundeep2287@gmail.com',
             'WARNING: Investment Platform - Long Running Queries Detected',
             'Long-running queries (>5 min) detected in the last 15 minutes. Review query patterns for optimization.'
         );
@@ -101,7 +108,8 @@ CREATE OR REPLACE ALERT INV_GOVERNANCE_DB.MONITORING.ALERT_FAILED_QUERY_SPIKE
     ))
     THEN
         CALL SYSTEM$SEND_EMAIL(
-            'investment-alerts@company.com',
+            'INV_EMAIL_NOTIFICATION',
+            'varundeep2287@gmail.com',
             'WARNING: Investment Platform - Failed Query Spike',
             'More than 10 failed queries detected in the last 15 minutes. Investigate error patterns.'
         );
@@ -127,7 +135,8 @@ CREATE OR REPLACE ALERT INV_GOVERNANCE_DB.MONITORING.ALERT_HIGH_WAREHOUSE_QUEUE
     ))
     THEN
         CALL SYSTEM$SEND_EMAIL(
-            'investment-alerts@company.com',
+            'INV_EMAIL_NOTIFICATION',
+            'varundeep2287@gmail.com',
             'WARNING: Investment Platform - High Warehouse Queue',
             'One or more warehouses have high query queue load. Consider scaling warehouse size.'
         );
@@ -159,7 +168,8 @@ CREATE OR REPLACE ALERT INV_GOVERNANCE_DB.MONITORING.ALERT_MONTHLY_COST_SPIKE
     ))
     THEN
         CALL SYSTEM$SEND_EMAIL(
-            'investment-alerts@company.com',
+            'INV_EMAIL_NOTIFICATION',
+            'varundeep2287@gmail.com',
             'CRITICAL: Investment Platform - Monthly Cost Spike',
             'Current month credit consumption exceeds 120% of previous month. Review cost drivers immediately.'
         );

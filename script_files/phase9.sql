@@ -684,15 +684,14 @@ SELECT
     SESSION_ID                                              AS SESSION_ID,
     USER_NAME                                               AS USER_NAME,
     CREATED_ON                                              AS LOGIN_TIME,
-    DESTROYED_ON                                            AS LOGOUT_TIME,
-    DATEDIFF(MINUTE, CREATED_ON, COALESCE(DESTROYED_ON, CURRENT_TIMESTAMP()))
-                                                            AS SESSION_DURATION_MINUTES,
+    IS_OPEN                                                 AS IS_SESSION_OPEN,
+    CLOSED_REASON                                           AS CLOSED_REASON,
     CLIENT_APPLICATION_ID                                   AS CLIENT_APPLICATION,
     CLIENT_APPLICATION_VERSION                              AS CLIENT_VERSION,
     CLIENT_ENVIRONMENT                                      AS CLIENT_ENVIRONMENT,
     AUTHENTICATION_METHOD                                   AS AUTH_METHOD,
     CASE
-        WHEN DATEDIFF(HOUR, CREATED_ON, COALESCE(DESTROYED_ON, CURRENT_TIMESTAMP())) > 8
+        WHEN IS_OPEN AND DATEDIFF(HOUR, CREATED_ON, CURRENT_TIMESTAMP()) > 8
         THEN 'EXTENDED_SESSION'
         WHEN AUTHENTICATION_METHOD NOT LIKE '%MFA%' AND AUTHENTICATION_METHOD NOT LIKE '%MULTI%'
         THEN 'NO_MFA'

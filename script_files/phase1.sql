@@ -99,6 +99,9 @@ SHOW SCHEMAS IN DATABASE INV_GOVERNANCE_DB;
 --   - CI/CD runner IPs (GitHub Actions, Azure DevOps)
 --   - Approved third-party vendor IPs (Bloomberg, Reuters feeds)
 --   - Cloud service provider NAT gateways
+ALTER ACCOUNT UNSET NETWORK_POLICY;
+DROP NETWORK POLICY IF EXISTS INV_NETWORK_POLICY;
+
 CREATE OR REPLACE NETWORK RULE INV_GOVERNANCE_DB.SECURITY.INV_ALLOWED_IPS
     TYPE = IPV4
     VALUE_LIST = ('0.0.0.0/0')
@@ -125,6 +128,8 @@ SHOW NETWORK POLICIES LIKE 'INV%';
 -- Note: Service accounts (SVC_ETL_INVESTMENT, SVC_DATA_FEEDS)
 -- should use key-pair authentication and bypass password policy.
 -- ============================================================
+
+ALTER ACCOUNT UNSET PASSWORD POLICY;
 
 CREATE OR REPLACE PASSWORD POLICY INV_GOVERNANCE_DB.SECURITY.INV_PASSWORD_POLICY
     PASSWORD_MIN_LENGTH = 14
@@ -156,6 +161,8 @@ DESCRIBE PASSWORD POLICY INV_GOVERNANCE_DB.SECURITY.INV_PASSWORD_POLICY;
 -- Prevents unauthorized access from unattended workstations.
 -- Critical for trading floors and portfolio management systems.
 -- ============================================================
+
+ALTER ACCOUNT UNSET SESSION POLICY;
 
 CREATE OR REPLACE SESSION POLICY INV_GOVERNANCE_DB.SECURITY.INV_SESSION_POLICY
     SESSION_IDLE_TIMEOUT_MINS = 30
@@ -240,8 +247,7 @@ CREATE OR REPLACE RESOURCE MONITOR INV_ACCOUNT_MONITOR
         ON 75 PERCENT DO NOTIFY
         ON 90 PERCENT DO NOTIFY
         ON 100 PERCENT DO SUSPEND
-        ON 110 PERCENT DO SUSPEND_IMMEDIATE
-    COMMENT = 'Account-level resource monitor for Investment Platform. 10,000 credits/month budget. Alerts at 50%, 75%, 90%. Suspends warehouses at 100%. Emergency suspend at 110%.';
+        ON 110 PERCENT DO SUSPEND_IMMEDIATE;
 
 -- Verification
 SHOW RESOURCE MONITORS LIKE 'INV%';

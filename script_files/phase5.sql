@@ -113,7 +113,7 @@ CREATE OR REPLACE RESOURCE MONITOR INV_ANALYTICS_MONITOR
 -- Quota: 1000 credits/month
 -- Purpose: ML model training, feature engineering
 -- ------------------------------------------------------------
-CREATE OR REPLACE RESOURCE_MONITOR INV_ML_MONITOR
+CREATE OR REPLACE RESOURCE MONITOR INV_ML_MONITOR
     WITH
         CREDIT_QUOTA = 1000
         FREQUENCY = MONTHLY
@@ -238,11 +238,11 @@ LIMIT 100;
 CREATE OR REPLACE VIEW VW_STORAGE_CONSUMPTION AS
 SELECT 
     usage_date,
-    ROUND(average_database_bytes / POWER(1024, 4), 4) AS database_storage_tb,
-    ROUND(average_stage_bytes / POWER(1024, 4), 4) AS stage_storage_tb,
-    ROUND(average_failsafe_bytes / POWER(1024, 4), 4) AS failsafe_storage_tb,
-    ROUND((average_database_bytes + average_stage_bytes + average_failsafe_bytes) / POWER(1024, 4), 4) AS total_storage_tb,
-    ROUND(((average_database_bytes + average_stage_bytes + average_failsafe_bytes) / POWER(1024, 4)) * 23, 2) AS estimated_monthly_cost_usd
+    ROUND(storage_bytes / POWER(1024, 4), 4) AS database_storage_tb,
+    ROUND(stage_bytes / POWER(1024, 4), 4) AS stage_storage_tb,
+    ROUND(failsafe_bytes / POWER(1024, 4), 4) AS failsafe_storage_tb,
+    ROUND((storage_bytes + stage_bytes + failsafe_bytes) / POWER(1024, 4), 4) AS total_storage_tb,
+    ROUND(((storage_bytes + stage_bytes + failsafe_bytes) / POWER(1024, 4)) * 23, 2) AS estimated_monthly_cost_usd
 FROM SNOWFLAKE.ACCOUNT_USAGE.STORAGE_USAGE
 WHERE usage_date >= DATEADD(MONTH, -6, CURRENT_DATE())
 ORDER BY usage_date DESC;
@@ -257,9 +257,11 @@ SELECT
     used_credits,
     remaining_credits,
     ROUND(used_credits / NULLIF(credit_quota, 0) * 100, 2) AS usage_percent,
-    frequency,
-    start_time,
-    end_time
+    notify AS notify_at_percent,
+    suspend AS suspend_at_percent,
+    suspend_immediate AS suspend_immediate_at_percent,
+    warehouses,
+    created
 FROM SNOWFLAKE.ACCOUNT_USAGE.RESOURCE_MONITORS
 WHERE name LIKE 'INV_%';
 
@@ -282,11 +284,11 @@ GRANT SELECT ON FUTURE VIEWS IN SCHEMA INV_GOVERNANCE_DB.MONITORING TO ROLE INV_
 SHOW RESOURCE MONITORS LIKE 'INV_%';
 
 -- Verify warehouse assignments
+SHOW WAREHOUSES LIKE 'INV_%';
 SELECT 
-    warehouse_name,
-    resource_monitor
-FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
-WHERE warehouse_name LIKE 'INV_%';
+    "name" AS warehouse_name,
+    "resource_monitor"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 -- Verify monitoring views
 SHOW VIEWS IN SCHEMA INV_GOVERNANCE_DB.MONITORING;

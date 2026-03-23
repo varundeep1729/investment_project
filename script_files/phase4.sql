@@ -431,7 +431,7 @@ CREATE TABLE IF NOT EXISTS DIM_SECURITY (
     risk_rating         VARCHAR(20),
     is_active           BOOLEAN DEFAULT TRUE,
     effective_from      TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    effective_to        TIMESTAMP_NTZ DEFAULT '9999-12-31',
+    effective_to        TIMESTAMP_NTZ DEFAULT '9999-12-31 00:00:00'::TIMESTAMP_NTZ,
     is_current          BOOLEAN DEFAULT TRUE,
     PRIMARY KEY (security_key)
 )
@@ -452,7 +452,7 @@ CREATE TABLE IF NOT EXISTS DIM_PORTFOLIO (
     min_investment      DECIMAL(18,2),
     is_active           BOOLEAN DEFAULT TRUE,
     effective_from      TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    effective_to        TIMESTAMP_NTZ DEFAULT '9999-12-31',
+    effective_to        TIMESTAMP_NTZ DEFAULT '9999-12-31 00:00:00'::TIMESTAMP_NTZ,
     PRIMARY KEY (portfolio_key)
 )
 COMMENT = 'Portfolio/Fund master dimension';
@@ -930,7 +930,7 @@ SELECT
     'SEC-MF-' || LPAD(ROW_NUMBER() OVER (ORDER BY RANDOM()), 5, '0') AS security_id,
     'US' || LPAD(ABS(HASH(f.ticker || SEQ4())), 10, '0') AS isin,
     LPAD(ABS(HASH(f.ticker)), 9, '0') AS cusip,
-    f.ticker || CASE WHEN SEQ4() > 0 THEN SEQ4() ELSE '' END AS ticker,
+    f.ticker || CASE WHEN SEQ4() > 0 THEN TO_VARCHAR(SEQ4()) ELSE '' END AS ticker,
     f.fund_name || CASE WHEN SEQ4() > 0 THEN ' Class ' || CHR(65 + MOD(SEQ4(), 5)) ELSE '' END AS security_name,
     'MUTUAL_FUND' AS security_type,
     CASE 

@@ -28,7 +28,7 @@ Dependencies: Phases 01-08 must be executed first
 */
 
 USE ROLE ACCOUNTADMIN;
-USE WAREHOUSE COMPUTE_WH;
+USE WAREHOUSE INV_ANALYTICS_WH;
 
 
 -- ============================================================================
@@ -46,16 +46,16 @@ SHOW PARAMETERS IN ACCOUNT;
 -- 10.1.2 Verify Key Account Settings
 SELECT 
     '10.1.2 - Key Account Settings Validation' AS test_name,
-    key,
-    value,
+    "key",
+    "value",
     CASE 
-        WHEN key = 'STATEMENT_TIMEOUT_IN_SECONDS' AND value::NUMBER <= 86400 THEN '✅ PASS'
-        WHEN key = 'STATEMENT_QUEUED_TIMEOUT_IN_SECONDS' AND value::NUMBER <= 3600 THEN '✅ PASS'
-        WHEN key = 'DATA_RETENTION_TIME_IN_DAYS' AND value::NUMBER >= 1 THEN '✅ PASS'
+        WHEN "key" = 'STATEMENT_TIMEOUT_IN_SECONDS' AND "value"::NUMBER <= 86400 THEN '✅ PASS'
+        WHEN "key" = 'STATEMENT_QUEUED_TIMEOUT_IN_SECONDS' AND "value"::NUMBER <= 3600 THEN '✅ PASS'
+        WHEN "key" = 'DATA_RETENTION_TIME_IN_DAYS' AND "value"::NUMBER >= 1 THEN '✅ PASS'
         ELSE '⚠️ CHECK'
     END AS validation_status
 FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
-WHERE key IN ('STATEMENT_TIMEOUT_IN_SECONDS', 'STATEMENT_QUEUED_TIMEOUT_IN_SECONDS', 'DATA_RETENTION_TIME_IN_DAYS');
+WHERE "key" IN ('STATEMENT_TIMEOUT_IN_SECONDS', 'STATEMENT_QUEUED_TIMEOUT_IN_SECONDS', 'DATA_RETENTION_TIME_IN_DAYS');
 
 -- 10.1.3 Network Rules Check
 SELECT '10.1.3 - Network Rules Check' AS test_name;
@@ -101,14 +101,14 @@ SELECT
     '10.2.3 - Role Hierarchy Matrix' AS test_name;
 
 SELECT 
-    role AS child_role,
-    grantee_name AS parent_role,
-    granted_by,
-    created_on
+    NAME AS child_role,
+    GRANTEE_NAME AS parent_role,
+    GRANTED_BY,
+    CREATED_ON
 FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
-WHERE role LIKE 'INV_%'
-  AND granted_on = 'ROLE'
-  AND deleted_on IS NULL
+WHERE NAME LIKE 'INV_%'
+  AND GRANTED_ON = 'ROLE'
+  AND DELETED_ON IS NULL
 ORDER BY parent_role, child_role;
 
 -- 10.2.4 Verify INV_READONLY is Base Role (granted to others)
@@ -117,21 +117,21 @@ SELECT
     grantee_name AS inherits_readonly,
     granted_by
 FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
-WHERE role = 'INV_READONLY'
+WHERE NAME = 'INV_READONLY'
   AND granted_on = 'ROLE'
   AND deleted_on IS NULL;
 
 -- 10.2.5 Verify Admin Roles Grant to SYSADMIN
 SELECT 
     '10.2.5 - Admin Roles to SYSADMIN' AS test_name,
-    role AS admin_role,
+    NAME AS admin_role,
     CASE 
-        WHEN grantee_name = 'SYSADMIN' THEN '✅ Correctly grants to SYSADMIN'
+        WHEN GRANTEE_NAME = 'SYSADMIN' THEN '✅ Correctly grants to SYSADMIN'
         ELSE '⚠️ Check hierarchy'
     END AS validation_status
 FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
-WHERE role IN ('INV_DATA_ADMIN', 'INV_ML_ADMIN', 'INV_APP_ADMIN')
-  AND grantee_name = 'SYSADMIN'
+WHERE NAME IN ('INV_DATA_ADMIN', 'INV_ML_ADMIN', 'INV_APP_ADMIN')
+  AND GRANTEE_NAME = 'SYSADMIN'
   AND granted_on = 'ROLE'
   AND deleted_on IS NULL;
 
@@ -192,20 +192,19 @@ SELECT
 FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 -- 10.3.3 Verify Warehouse Size Configuration
+SHOW WAREHOUSES LIKE 'INV_%';
 SELECT 
     '10.3.3 - Warehouse Size Validation' AS test_name,
-    warehouse_name,
-    warehouse_size,
+    "name" AS warehouse_name,
+    "size" AS warehouse_size,
     CASE 
-        WHEN warehouse_name = 'INV_INGEST_WH' AND warehouse_size = 'Small' THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_TRANSFORM_WH' AND warehouse_size IN ('Medium', 'Small') THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_ANALYTICS_WH' AND warehouse_size IN ('Medium', 'Small') THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_ML_WH' AND warehouse_size IN ('Large', 'Medium') THEN '✅ Correct'
+        WHEN "name" = 'INV_INGEST_WH' AND "size" = 'Small' THEN '✅ Correct'
+        WHEN "name" = 'INV_TRANSFORM_WH' AND "size" IN ('Medium', 'Small') THEN '✅ Correct'
+        WHEN "name" = 'INV_ANALYTICS_WH' AND "size" IN ('Medium', 'Small') THEN '✅ Correct'
+        WHEN "name" = 'INV_ML_WH' AND "size" IN ('Large', 'Medium') THEN '✅ Correct'
         ELSE '⚠️ Review sizing'
     END AS size_check
-FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSES
-WHERE warehouse_name LIKE 'INV_%'
-  AND deleted IS NULL;
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 -- 10.3.4 Warehouse Usage Statistics
 SELECT 
@@ -214,7 +213,7 @@ SELECT
 SELECT 
     warehouse_name,
     COUNT(*) AS query_count,
-    SUM(credits_used) AS total_credits,
+    SUM(credits_used_cloud_services) AS total_credits,
     ROUND(AVG(total_elapsed_time) / 1000, 2) AS avg_query_seconds,
     MAX(start_time) AS last_query_time
 FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
@@ -395,6 +394,7 @@ SELECT
 FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 -- 10.6.3 Resource Monitor Configuration
+SHOW RESOURCE MONITORS LIKE 'INV_%';
 SELECT 
     '10.6.3 - Monitor Configuration Check' AS test_name,
     "name" AS monitor_name,
@@ -414,21 +414,20 @@ SELECT
 FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 -- 10.6.4 Warehouse-to-Monitor Mapping Verification
+SHOW WAREHOUSES LIKE 'INV_%';
 SELECT 
     '10.6.4 - Warehouse-Monitor Mapping' AS test_name,
-    warehouse_name,
-    resource_monitor,
+    "name" AS warehouse_name,
+    "resource_monitor" AS resource_monitor,
     CASE 
-        WHEN warehouse_name = 'INV_INGEST_WH' AND resource_monitor = 'INV_INGEST_MONITOR' THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_TRANSFORM_WH' AND resource_monitor = 'INV_TRANSFORM_MONITOR' THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_ANALYTICS_WH' AND resource_monitor = 'INV_ANALYTICS_MONITOR' THEN '✅ Correct'
-        WHEN warehouse_name = 'INV_ML_WH' AND resource_monitor = 'INV_ML_MONITOR' THEN '✅ Correct'
-        WHEN resource_monitor IS NULL THEN '❌ No Monitor!'
+        WHEN "name" = 'INV_INGEST_WH' AND "resource_monitor" = 'INV_INGEST_MONITOR' THEN '✅ Correct'
+        WHEN "name" = 'INV_TRANSFORM_WH' AND "resource_monitor" = 'INV_TRANSFORM_MONITOR' THEN '✅ Correct'
+        WHEN "name" = 'INV_ANALYTICS_WH' AND "resource_monitor" = 'INV_ANALYTICS_MONITOR' THEN '✅ Correct'
+        WHEN "name" = 'INV_ML_WH' AND "resource_monitor" = 'INV_ML_MONITOR' THEN '✅ Correct'
+        WHEN "resource_monitor" IS NULL OR "resource_monitor" = '' THEN '❌ No Monitor!'
         ELSE '⚠️ Check Mapping'
     END AS validation_status
-FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSES
-WHERE warehouse_name LIKE 'INV_%'
-  AND deleted IS NULL;
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 
 -- ============================================================================
@@ -509,16 +508,15 @@ FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 SELECT 
     '10.8.3 - Alert Configuration Summary' AS test_name;
 
+SHOW ALERTS LIKE 'INV_%' IN DATABASE INV_GOVERNANCE_DB;
 SELECT 
-    name AS alert_name,
-    state,
-    warehouse,
-    schedule,
-    owner
-FROM SNOWFLAKE.ACCOUNT_USAGE.ALERTS
-WHERE name LIKE 'INV_%'
-  AND deleted_on IS NULL
-ORDER BY name;
+    '10.8.3 - Alert Configuration Summary' AS test_name,
+    "name" AS alert_name,
+    "state",
+    "warehouse",
+    "schedule",
+    "owner"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 
 
 -- ============================================================================
@@ -1026,7 +1024,7 @@ SHOW SESSION POLICIES IN DATABASE INV_GOVERNANCE_DB;
 
 -- 10.13.2 Session Policy Details
 SELECT '10.13.2 - Session Policy Details' AS test_name;
-DESC SESSION POLICY INV_GOVERNANCE_DB.SECURITY.INVESTMENT_SESSION_POLICY;
+DESC SESSION POLICY INV_GOVERNANCE_DB.SECURITY.INV_SESSION_POLICY;
 
 -- 10.13.3 Password Policy Check
 SELECT '10.13.3 - Password Policy Configuration' AS test_name;
@@ -1034,11 +1032,11 @@ SHOW PASSWORD POLICIES IN DATABASE INV_GOVERNANCE_DB;
 
 -- 10.13.4 Password Policy Details
 SELECT '10.13.4 - Password Policy Details' AS test_name;
-DESC PASSWORD POLICY INV_GOVERNANCE_DB.SECURITY.INVESTMENT_PASSWORD_POLICY;
+DESC PASSWORD POLICY INV_GOVERNANCE_DB.SECURITY.INV_PASSWORD_POLICY;
 
 -- 10.13.5 Network Policy Check
 SELECT '10.13.5 - Network Policy Check' AS test_name;
-SHOW NETWORK POLICIES LIKE '%INVESTMENT%';
+SHOW NETWORK POLICIES LIKE 'INV_%';
 
 
 -- ============================================================================
@@ -1149,9 +1147,9 @@ FROM (
     SELECT 
         '02. Warehouses',
         4,
-        (SELECT COUNT(*) FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSES WHERE warehouse_name LIKE 'INV_%' AND deleted IS NULL),
-        CASE WHEN (SELECT COUNT(*) FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSES WHERE warehouse_name LIKE 'INV_%' AND deleted IS NULL) >= 4 
-             THEN '✅ HEALTHY' ELSE '❌ ISSUE' END,
+        (SELECT COUNT(DISTINCT WAREHOUSE_NAME) FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY WHERE WAREHOUSE_NAME LIKE 'INV_%' AND START_TIME >= DATEADD(DAY, -30, CURRENT_DATE())),
+        CASE WHEN (SELECT COUNT(DISTINCT WAREHOUSE_NAME) FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY WHERE WAREHOUSE_NAME LIKE 'INV_%' AND START_TIME >= DATEADD(DAY, -30, CURRENT_DATE())) >= 4 
+             THEN '✅ HEALTHY' ELSE '⚠️ CHECK (may not have usage yet)' END,
         'Dedicated warehouses'
     
     UNION ALL
